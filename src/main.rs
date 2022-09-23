@@ -1,5 +1,6 @@
 mod jcloud_urlgroup;
 mod url_response;
+mod args;
 
 use std::process::Command;
 use rocket::{routes, get, launch, State};
@@ -7,7 +8,9 @@ use crate::jcloud_urlgroup::JCloudURLGroup;
 use regex::Regex;
 use lazy_static::lazy_static;
 use rocket::serde::json::Json;
+use crate::args::Args;
 use crate::url_response::URLResponse;
+use clap::Parser;
 
 fn get_urls() -> Vec<String> {
     lazy_static! {
@@ -23,26 +26,25 @@ fn get_urls() -> Vec<String> {
     return urls;
 }
 
-fn check_jcloud(url_group: &State<JCloudURLGroup>) -> Json<URLResponse> {
+fn check_jcloud(url_group: &State<JCloudURLGroup>) {
     let urls = get_urls();
     let my_url = url_group.my_url.read().unwrap();
-    if my_url.is_some() && urls.contains(my_url.as_ref().unwrap()) {
-        // Now we can just return that URL
-        return Json(URLResponse {
-            endpoint: my_url.unwrap()
-        });
+    if my_url.is_none() || !urls.contains(my_url.as_ref().unwrap()) {
+        // We need to start the new jcloud instance
     }
-    // We need to start the new jcloud
-    return None;
 }
 
 #[get("/")]
-fn index(url_group: &State<JCloudURLGroup>) -> &'static str {
+fn index(url_group: &State<JCloudURLGroup>) -> Json<URLResponse> {
     check_jcloud(url_group);
-    "sedx"
+
+    return Json(URLResponse {
+        endpoint: "".to_string()
+    });
 }
 
 #[launch]
 fn rocket() -> _ {
-    rocket::build().manage(JCloudURLGroup::new()).mount("/", routes![index])
+    let args = Args::parse();
+    rocket::build().manage(JCloudURLGroup::new(args)).mount("/", routes![index])
 }
