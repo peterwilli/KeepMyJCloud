@@ -1,15 +1,14 @@
 use std::sync::RwLock;
-use crate::Args;
+
+use url::Url;
 
 pub struct JCloudURLGroup {
-    pub args: Args,
-    pub my_url: RwLock<Option<String>>
+    pub my_url: RwLock<Option<Url>>
 }
 
 impl JCloudURLGroup {
-    pub fn new(args: Args) -> Self {
+    pub fn new() -> Self {
         return Self {
-            args,
             my_url: RwLock::new(None)
         };
     }

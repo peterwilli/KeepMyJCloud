@@ -6,13 +6,13 @@ use clap::Parser;
 pub struct Args {
     /// Path to flow.yml (jc deploy will be called if not exists)
     #[clap(short, long, value_parser)]
-    flow_yml_path: String,
+    pub flow_yml_path: String,
 
-    /// Current Jina Cloud ID for instance of choice if its already running (if any)
+    /// Current Jina Cloud URL for instance of choice if its already running (if any)
     #[clap(short, long, value_parser)]
-    current_jcloud_id: Option<String>,
+    pub current_jcloud_url: Option<String>,
 
     /// Port number
     #[clap(short, long, value_parser, default_value_t = 8080)]
-    port: u16,
+    pub port: u16,
 }
