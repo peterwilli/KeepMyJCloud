@@ -1,18 +1,19 @@
 use std::process::Command;
+use std::time::{Duration, Instant};
 
 use clap::Parser;
 use lazy_static::lazy_static;
 use log::debug;
 use regex::Regex;
-use rocket::{get, launch, routes, State};
+use rocket::{get, launch, routes, State as RocketState};
 use rocket::serde::json::Json;
-use url::{ParseError, Url};
+use url::{Url};
 
 use crate::args::Args;
-use crate::jcloud_urlgroup::JCloudURLGroup;
+use crate::state::State;
 use crate::url_response::URLResponse;
 
-mod jcloud_urlgroup;
+mod state;
 mod url_response;
 mod args;
 
@@ -52,7 +53,7 @@ fn start_instance(flow_yml_path: &str) -> Result<Url, &'static str> {
     return Ok(Url::parse(&captures[1]).unwrap());
 }
 
-fn check_jcloud(state: &State<JCloudURLGroup>, flow_yml_path: &str) {
+fn check_jcloud(state: &RocketState<State>, flow_yml_path: &str) {
     let urls = get_urls();
     let my_url = state.my_url.read().unwrap();
     if my_url.is_none() || !urls.contains(my_url.as_ref().unwrap()) {
@@ -62,8 +63,18 @@ fn check_jcloud(state: &State<JCloudURLGroup>, flow_yml_path: &str) {
 }
 
 #[get("/")]
-fn index(state: &State<JCloudURLGroup>, args: &State<Args>) -> Json<URLResponse> {
-    check_jcloud(state, &args.flow_yml_path);
+fn index(state: &RocketState<State>, args: &RocketState<Args>) -> Json<URLResponse> {
+    let last_checked_read_lock = state.last_checked.read().unwrap();
+    let should_check = if last_checked_read_lock.is_some() {
+        last_checked_read_lock.unwrap().elapsed() > Duration::from_secs(10)
+    } else {
+        true
+    };
+    drop(last_checked_read_lock);
+    if should_check {
+        check_jcloud(state, &args.flow_yml_path);
+        *state.last_checked.write().unwrap() = Some(Instant::now());
+    }
     let mut url = state.my_url.read().unwrap().as_ref().unwrap().to_string();
     // Rust tends to set a trailing slash at the end of a URL which may or may not work with Jina.
     // I choose to remove it to follow their conventions more closely.
@@ -79,7 +90,7 @@ fn index(state: &State<JCloudURLGroup>, args: &State<Args>) -> Json<URLResponse>
 fn rocket() -> _ {
     env_logger::init();
     let args = Args::parse();
-    let state = JCloudURLGroup::new();
+    let state = State::new();
     if args.current_jcloud_url.is_some() {
         *state.my_url.write().unwrap() = Some(Url::parse(args.current_jcloud_url.as_ref().unwrap()).unwrap());
     }
