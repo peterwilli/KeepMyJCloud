@@ -1,5 +1,5 @@
 [package]
-name = "KeepMyJCloud"
+name = "keep_my_jcloud"
 version = "0.1.0"
 edition = "2021"
 

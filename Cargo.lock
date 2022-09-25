@@ -3,19 +3,6 @@
 version = 3
 
 [[package]]
-name = "KeepMyJCloud"
-version = "0.1.0"
-dependencies = [
- "clap",
- "env_logger",
- "lazy_static",
- "log",
- "regex",
- "rocket",
- "url",
-]
-
-[[package]]
 name = "aead"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -653,6 +640,19 @@ name = "itoa"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c8af84674fe1f223a982c933a0ee1086ac4d4052aa0fb8060c12c6ad838e754"
+
+[[package]]
+name = "keep_my_jcloud"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "env_logger",
+ "lazy_static",
+ "log",
+ "regex",
+ "rocket",
+ "url",
+]
 
 [[package]]
 name = "lazy_static"
