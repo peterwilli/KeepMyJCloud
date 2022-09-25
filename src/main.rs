@@ -11,18 +11,20 @@ use rocket::serde::json::Json;
 use url::Url;
 
 use crate::args::Args;
+use crate::info_response::InfoResponse;
 use crate::state::State;
 use crate::url_response::URLResponse;
 
 mod state;
 mod url_response;
 mod args;
+mod info_response;
 
 lazy_static! {
     static ref RE_URLS: Regex = Regex::new(r"\s([a-z]+?://.*jina\.ai)").unwrap();
 }
 
-fn run_jcloud(args: &[&str]) -> String  {
+fn run_jcloud(args: &[&str]) -> String {
     debug!("Calling jcloud with arguments: {:?}", args);
     let mut child = Command::new("jcloud")
         .args(args)
@@ -111,6 +113,11 @@ fn index(state: &RocketState<State>, args: &RocketState<Args>) -> Json<URLRespon
     });
 }
 
+#[get("/info")]
+fn info() -> Json<InfoResponse> {
+    return Json(InfoResponse::new());
+}
+
 #[launch]
 fn rocket() -> _ {
     env_logger::init();
@@ -119,5 +126,5 @@ fn rocket() -> _ {
     if args.current_jcloud_url.is_some() {
         *state.my_url.write().unwrap() = Some(Url::parse(args.current_jcloud_url.as_ref().unwrap()).unwrap());
     }
-    rocket::build().manage(args).manage(state).mount("/", routes![index])
+    rocket::build().manage(args).manage(state).mount("/", routes![index, info])
 }
