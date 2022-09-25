@@ -1,13 +1,14 @@
-use std::process::Command;
+use std::io::{BufRead, BufReader};
+use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
 use clap::Parser;
 use lazy_static::lazy_static;
-use log::debug;
+use log::{debug, error};
 use regex::Regex;
 use rocket::{get, launch, routes, State as RocketState};
 use rocket::serde::json::Json;
-use url::{Url};
+use url::Url;
 
 use crate::args::Args;
 use crate::state::State;
@@ -21,15 +22,38 @@ lazy_static! {
     static ref RE_URLS: Regex = Regex::new(r"\s([a-z]+?://.*jina\.ai)").unwrap();
 }
 
-fn run_jcloud(args: &[&str]) -> String {
+fn run_jcloud(args: &[&str]) -> String  {
     debug!("Calling jcloud with arguments: {:?}", args);
-    let jc_output = Command::new("jcloud")
+    let mut child = Command::new("jcloud")
         .args(args)
-        .output()
-        .expect("failed to execute process");
-    let output_str = String::from_utf8_lossy(&jc_output.stdout).to_string();
-    debug!("jcloud {:?} output: {}", args, output_str);
-    return output_str;
+        .stdout(Stdio::piped())
+        .spawn().expect("Spawn failed");
+
+    let stdout = child.stdout.take().unwrap();
+    let mut reader = BufReader::new(stdout);
+    let mut lines = String::new();
+    loop {
+        let mut line = String::new();
+        match reader.read_line(&mut line) {
+            Ok(_) => {
+                debug!("Line: {}", line);
+                if line.is_empty() {
+                    debug!("Line is empty, time to close off!");
+                    break;
+                }
+                if line.to_lowercase().find("survey").is_some() {
+                    debug!("Command is asking for something, killing!");
+                    child.kill().expect("Kill failed");
+                    break;
+                }
+                lines.push_str(&line);
+            }
+            Err(e) => {
+                error!("Error: {:?}", e);
+            }
+        }
+    }
+    return lines;
 }
 
 fn get_urls() -> Vec<Url> {
@@ -57,6 +81,7 @@ fn check_jcloud(state: &RocketState<State>, flow_yml_path: &str) {
     let urls = get_urls();
     let my_url = state.my_url.read().unwrap();
     if my_url.is_none() || !urls.contains(my_url.as_ref().unwrap()) {
+        drop(my_url);
         let url = start_instance(flow_yml_path).unwrap();
         *state.my_url.write().unwrap() = Some(url);
     }
