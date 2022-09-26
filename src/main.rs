@@ -84,25 +84,38 @@ fn check_jcloud(state: &RocketState<State>, flow_yml_path: &str) {
     let my_url = state.my_url.read().unwrap();
     if my_url.is_none() || !urls.contains(my_url.as_ref().unwrap()) {
         drop(my_url);
-        let url = start_instance(flow_yml_path).unwrap();
-        *state.my_url.write().unwrap() = Some(url);
+        match start_instance(flow_yml_path) {
+            Ok(url) => {
+                *state.my_url.write().unwrap() = Some(url);
+            }
+            Err(_) => {
+
+            }
+        };
     }
 }
 
 #[get("/")]
 fn index(state: &RocketState<State>, args: &RocketState<Args>) -> Json<URLResponse> {
     let last_checked_read_lock = state.last_checked.read().unwrap();
-    let should_check = if last_checked_read_lock.is_some() {
+    let should_check = args.flow_yml_path.is_some() && if last_checked_read_lock.is_some() {
         last_checked_read_lock.unwrap().elapsed() > Duration::from_secs(10)
     } else {
         true
     };
     drop(last_checked_read_lock);
     if should_check {
-        check_jcloud(state, &args.flow_yml_path);
+        check_jcloud(state, args.flow_yml_path.as_ref().unwrap());
         *state.last_checked.write().unwrap() = Some(Instant::now());
     }
-    let mut url = state.my_url.read().unwrap().as_ref().unwrap().to_string();
+    let url_lock = state.my_url.read().unwrap();
+    let mut url = if url_lock.is_some() {
+        url_lock.as_ref().unwrap().to_string()
+    }
+    else {
+        // Use the alternate URL if exists
+        args.alternate_url.as_ref().expect("No alternate URL while Jina is not available!").to_string()
+    };
     // Rust tends to set a trailing slash at the end of a URL which may or may not work with Jina.
     // I choose to remove it to follow their conventions more closely.
     if url.ends_with("/") {
@@ -124,7 +137,7 @@ fn rocket() -> _ {
     let args = Args::parse();
     let state = State::new();
     if args.current_jcloud_url.is_some() {
-        *state.my_url.write().unwrap() = Some(Url::parse(args.current_jcloud_url.as_ref().unwrap()).unwrap());
+        *state.my_url.write().unwrap() = Some(args.current_jcloud_url.as_ref().unwrap().clone());
     }
     rocket::build().manage(args).manage(state).mount("/", routes![index, info])
 }
