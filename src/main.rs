@@ -1,4 +1,5 @@
 use std::io::{BufRead, BufReader};
+use std::net::Ipv4Addr;
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
@@ -6,7 +7,7 @@ use clap::Parser;
 use lazy_static::lazy_static;
 use log::{debug, error};
 use regex::Regex;
-use rocket::{get, launch, routes, State as RocketState};
+use rocket::{Config, get, launch, routes, State as RocketState};
 use rocket::serde::json::Json;
 use url::Url;
 
@@ -135,9 +136,14 @@ fn info() -> Json<InfoResponse> {
 fn rocket() -> _ {
     env_logger::init();
     let args = Args::parse();
+    let config = Config {
+        address: args.host,
+        port: args.port,
+        ..Config::debug_default()
+    };
     let state = State::new();
     if args.current_jcloud_url.is_some() {
         *state.my_url.write().unwrap() = Some(args.current_jcloud_url.as_ref().unwrap().clone());
     }
-    rocket::build().manage(args).manage(state).mount("/", routes![index, info])
+    rocket::custom(&config).manage(args).manage(state).mount("/", routes![index, info])
 }

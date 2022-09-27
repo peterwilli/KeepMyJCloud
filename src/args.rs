@@ -1,3 +1,4 @@
+use std::net::IpAddr;
 use clap::Parser;
 use url::Url;
 
@@ -20,4 +21,8 @@ pub struct Args {
     /// Port number
     #[clap(short, long, value_parser, default_value_t = 8080)]
     pub port: u16,
+
+    /// Host address (127.0.0.1 by default, to avoid a public service in case you use a reverse proxy like nginx. You can set this to 0.0.0.0 otherwise!)
+    #[clap(short, long, value_parser, default_value = "127.0.0.1")]
+    pub host: IpAddr,
 }
