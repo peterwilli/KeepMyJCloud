@@ -13,3 +13,4 @@ clap = { version = "3.2", features = ["derive"] }
 url = "2.3"
 log = "0.4.17"
 env_logger = "0.9.1"
+rocket-cache-response = "0.6.2"

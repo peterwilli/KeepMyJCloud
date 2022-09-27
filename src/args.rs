@@ -25,4 +25,8 @@ pub struct Args {
     /// Host address (127.0.0.1 by default, to avoid a public service in case you use a reverse proxy like nginx. You can set this to 0.0.0.0 otherwise!)
     #[clap(short, long, value_parser, default_value = "127.0.0.1")]
     pub host: IpAddr,
+
+    /// The amount of seconds to wait until checking for a live service again
+    #[clap(short = 'd', long, value_parser, default_value_t = 10)]
+    pub check_delay: u16
 }

@@ -9,6 +9,7 @@ use log::{debug, error};
 use regex::Regex;
 use rocket::{Config, get, launch, routes, State as RocketState};
 use rocket::serde::json::Json;
+use rocket_cache_response::CacheResponse;
 use url::Url;
 
 use crate::args::Args;
@@ -97,10 +98,10 @@ fn check_jcloud(state: &RocketState<State>, flow_yml_path: &str) {
 }
 
 #[get("/")]
-fn index(state: &RocketState<State>, args: &RocketState<Args>) -> Json<URLResponse> {
+fn index(state: &RocketState<State>, args: &RocketState<Args>) -> CacheResponse<Json<URLResponse>> {
     let last_checked_read_lock = state.last_checked.read().unwrap();
     let should_check = args.flow_yml_path.is_some() && if last_checked_read_lock.is_some() {
-        last_checked_read_lock.unwrap().elapsed() > Duration::from_secs(10)
+        last_checked_read_lock.unwrap().elapsed() > Duration::from_secs(args.check_delay as u64)
     } else {
         true
     };
@@ -122,14 +123,22 @@ fn index(state: &RocketState<State>, args: &RocketState<Args>) -> Json<URLRespon
     if url.ends_with("/") {
         url.pop();
     }
-    return Json(URLResponse {
-        endpoint: url
-    });
+    return CacheResponse::Public {
+        responder: Json(URLResponse {
+            endpoint: url
+        }),
+        max_age: args.check_delay as u32,
+        must_revalidate: false
+    }
 }
 
 #[get("/info")]
-fn info() -> Json<InfoResponse> {
-    return Json(InfoResponse::new());
+fn info() -> CacheResponse<Json<InfoResponse>> {
+    return CacheResponse::Public {
+        responder: Json(InfoResponse::new()),
+        max_age: 10,
+        must_revalidate: false
+    };
 }
 
 #[launch]
