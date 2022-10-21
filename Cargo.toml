@@ -1,6 +1,6 @@
 [package]
 name = "keep_my_jcloud"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -9,7 +9,7 @@ edition = "2021"
 rocket = { version = "0.5.0-rc.2", features = ["json", "serde_json"] }
 regex = "1"
 lazy_static = "1.4.0"
-clap = { version = "3.2", features = ["derive"] }
+clap = { version = "4.0.17", features = ["derive"] }
 url = "2.3"
 log = "0.4.17"
 env_logger = "0.9.1"

@@ -9,7 +9,7 @@ pub struct InfoResponse {
 impl InfoResponse {
     pub fn new() -> Self {
         return InfoResponse {
-            version: "0.1.0".to_string()
+            version: "0.2.0".to_string()
         };
     }
 }

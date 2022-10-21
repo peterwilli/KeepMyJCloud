@@ -28,9 +28,9 @@ Keep my JCloud allows anyone to get a single URL to access their JCloud instance
 
 # Examples
 
-- Keep a JCloud flow online:
-    - `keep_my_jcloud --flow-yml-path=/path/to/flow.yml`
-- Keep a JCloud flow online (without re-deploying a new instance, i.e. keeping track on an already running instance):
-    - `keep_my_jcloud --flow-yml-path=/path/to/flow.yml --current-jcloud-url=grpcs://527fae43ba.wolf.jina.ai`
+We set project name to `myservice` but you're encouraged to set unique names per project to make sure your instances are correctly tracked!
+
+- Keep a JCloud flow online (if `myservice` already exists, use that instance, i.e. keeping track on an already running instance, if none exists, re-deploy one):
+    - `keep_my_jcloud --project-name=myservice --flow-yml-path=/path/to/flow.yml`
 - Keep a JCloud flow online, with fallback to your own instance:
-    - `keep_my_jcloud --flow-yml-path=/path/to/flow.yml --alternate-url=grpcs://emeraldsarecool.ai:51001`
+    - `keep_my_jcloud --project-name=myservice --flow-yml-path=/path/to/flow.yml --alternate-url=grpcs://emeraldsarecool.ai:51001`

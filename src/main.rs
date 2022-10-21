@@ -1,5 +1,4 @@
 use std::io::{BufRead, BufReader};
-use std::net::Ipv4Addr;
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
@@ -24,6 +23,7 @@ mod info_response;
 
 lazy_static! {
     static ref RE_URLS: Regex = Regex::new(r"\s([a-z]+?://.*jina\.ai)").unwrap();
+    static ref RE_URL_NAME: Regex = Regex::new(r"/([a-z]*?)-").unwrap();
 }
 
 fn run_jcloud(args: &[&str]) -> String {
@@ -68,8 +68,8 @@ fn get_urls() -> Vec<Url> {
     return urls;
 }
 
-fn start_instance(flow_yml_path: &str) -> Result<Url, &'static str> {
-    let jc_output = run_jcloud(&["deploy", flow_yml_path]);
+fn start_instance(flow_yml_path: &str, project_name: &str) -> Result<Url, &'static str> {
+    let jc_output = run_jcloud(&["deploy", format!("--name={}", project_name).as_ref(), flow_yml_path]);
     let captures = match RE_URLS.captures(&jc_output) {
         Some(captures) => {
             captures
@@ -83,10 +83,24 @@ fn start_instance(flow_yml_path: &str) -> Result<Url, &'static str> {
 
 fn check_jcloud(state: &RocketState<State>, flow_yml_path: &str) {
     let urls = get_urls();
-    let my_url = state.my_url.read().unwrap();
-    if my_url.is_none() || !urls.contains(my_url.as_ref().unwrap()) {
-        drop(my_url);
-        match start_instance(flow_yml_path) {
+    let mut current_url = None;
+    for url in urls {
+        match RE_URL_NAME.captures(url.as_str()) {
+            Some(captures) => {
+                let name = &captures[1];
+                if name == state.project_name {
+                    current_url = Some(url);
+                    break;
+                }
+            }
+            None => {
+
+            }
+        }
+    }
+
+    if current_url.is_none() {
+        match start_instance(flow_yml_path, &state.project_name) {
             Ok(url) => {
                 *state.my_url.write().unwrap() = Some(url);
             }
@@ -94,6 +108,9 @@ fn check_jcloud(state: &RocketState<State>, flow_yml_path: &str) {
 
             }
         };
+    }
+    else {
+        *state.my_url.write().unwrap() = current_url;
     }
 }
 
@@ -145,14 +162,14 @@ fn info() -> CacheResponse<Json<InfoResponse>> {
 fn rocket() -> _ {
     env_logger::init();
     let args = Args::parse();
+    if !args.project_name.chars().all(char::is_alphanumeric) {
+        panic!("Project name must be only alphanumeric characters!");
+    }
     let config = Config {
         address: args.host,
         port: args.port,
         ..Config::debug_default()
     };
-    let state = State::new();
-    if args.current_jcloud_url.is_some() {
-        *state.my_url.write().unwrap() = Some(args.current_jcloud_url.as_ref().unwrap().clone());
-    }
+    let state = State::new(args.project_name.clone());
     rocket::custom(&config).manage(args).manage(state).mount("/", routes![index, info])
 }

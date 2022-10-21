@@ -10,9 +10,9 @@ pub struct Args {
     #[clap(short, long, value_parser)]
     pub flow_yml_path: Option<String>,
 
-    /// Current Jina Cloud URL for instance of choice if its already running (if any)
-    #[clap(short, long, value_parser)]
-    pub current_jcloud_url: Option<Url>,
+    /// This will be used to check if already online. Make sure you use a unique name per project!
+    #[clap(short = 'n', long, value_parser)]
+    pub project_name: String,
 
     /// If Jina Cloud is offline or if you simply want your own URL without JCloud
     #[clap(short, long, value_parser)]
@@ -23,7 +23,7 @@ pub struct Args {
     pub port: u16,
 
     /// Host address (127.0.0.1 by default, to avoid a public service in case you use a reverse proxy like nginx. You can set this to 0.0.0.0 otherwise!)
-    #[clap(short, long, value_parser, default_value = "127.0.0.1")]
+    #[clap(short = 'H', long, value_parser, default_value = "127.0.0.1")]
     pub host: IpAddr,
 
     /// The amount of seconds to wait until checking for a live service again
