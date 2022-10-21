@@ -30,6 +30,7 @@ fn run_jcloud(args: &[&str]) -> String {
     debug!("Calling jcloud with arguments: {:?}", args);
     let mut child = Command::new("jcloud")
         .args(args)
+        .env("COLUMNS", "1024")
         .stdout(Stdio::piped())
         .spawn().expect("Spawn failed");
 
