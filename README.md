@@ -30,6 +30,20 @@ Keep my JCloud allows anyone to get a single URL to access their JCloud instance
 
 We set project name to `myservice` but you're encouraged to set unique names per project to make sure your instances are correctly tracked!
 
+Save the following flow.yml (Note the same name under `jcloud`):
+
+```yml
+jtype: Flow
+jcloud:
+  name: myservice
+with:
+  protocol: 'http'
+monitoring: true
+executors:
+  - name: magic_prompt
+    uses: jinahub+docker://MagicPromptExecutor/v1.0
+```
+
 - Keep a JCloud flow online (if `myservice` already exists, use that instance, i.e. keeping track on an already running instance, if none exists, re-deploy one):
     - `keep_my_jcloud --project-name=myservice --flow-yml-path=/path/to/flow.yml`
 - Keep a JCloud flow online, with fallback to your own instance:

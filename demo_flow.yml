@@ -1,4 +1,6 @@
 jtype: Flow
+jcloud:
+  name: myservice
 with:
   protocol: 'http'
 monitoring: true

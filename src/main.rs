@@ -69,8 +69,8 @@ fn get_urls() -> Vec<Url> {
     return urls;
 }
 
-fn start_instance(flow_yml_path: &str, project_name: &str) -> Result<Url, &'static str> {
-    let jc_output = run_jcloud(&["deploy", format!("--name={}", project_name).as_ref(), flow_yml_path]);
+fn start_instance(flow_yml_path: &str) -> Result<Url, &'static str> {
+    let jc_output = run_jcloud(&["deploy", flow_yml_path]);
     let captures = match RE_URLS.captures(&jc_output) {
         Some(captures) => {
             captures
@@ -101,7 +101,7 @@ fn check_jcloud(state: &RocketState<State>, flow_yml_path: &str) {
     }
 
     if current_url.is_none() {
-        match start_instance(flow_yml_path, &state.project_name) {
+        match start_instance(flow_yml_path) {
             Ok(url) => {
                 *state.my_url.write().unwrap() = Some(url);
             }
