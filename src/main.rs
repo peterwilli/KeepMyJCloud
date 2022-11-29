@@ -22,7 +22,7 @@ mod args;
 mod info_response;
 
 lazy_static! {
-    static ref RE_URLS: Regex = Regex::new(r"\s([a-z]+?://.*jina\.ai)").unwrap();
+    static ref RE_URLS: Regex = Regex::new(r#""([a-z]+?://.*jina\.ai)"#).unwrap();
     static ref RE_URL_NAME: Regex = Regex::new(r"/([a-z]*?)-").unwrap();
 }
 
@@ -69,27 +69,18 @@ fn get_urls() -> Vec<Url> {
     return urls;
 }
 
-fn start_instance(flow_yml_path: &str) -> Result<Url, &'static str> {
-    let jc_output = run_jcloud(&["deploy", flow_yml_path]);
-    let captures = match RE_URLS.captures(&jc_output) {
-        Some(captures) => {
-            captures
-        }
-        None => {
-            return Err("No url found in deployment");
-        }
-    };
-    return Ok(Url::parse(&captures[1]).unwrap());
+fn start_instance(flow_yml_path: &str){
+    run_jcloud(&["deploy", flow_yml_path]);
 }
 
-fn check_jcloud(state: &RocketState<State>, flow_yml_path: &str) {
+fn get_current_url(project_name: &str) -> Option<Url> {
     let urls = get_urls();
     let mut current_url = None;
     for url in urls {
         match RE_URL_NAME.captures(url.as_str()) {
             Some(captures) => {
                 let name = &captures[1];
-                if name == state.project_name {
+                if name == project_name {
                     current_url = Some(url);
                     break;
                 }
@@ -99,16 +90,17 @@ fn check_jcloud(state: &RocketState<State>, flow_yml_path: &str) {
             }
         }
     }
+    return current_url;
+}
 
+fn check_jcloud(state: &RocketState<State>, flow_yml_path: &str) {
+    let current_url = get_current_url(&state.project_name);
     if current_url.is_none() {
-        match start_instance(flow_yml_path) {
-            Ok(url) => {
-                *state.my_url.write().unwrap() = Some(url);
-            }
-            Err(_) => {
-
-            }
-        };
+        start_instance(flow_yml_path);
+        let current_url = get_current_url(&state.project_name);
+        if current_url.is_some() {
+            *state.my_url.write().unwrap() = current_url;
+        }
     }
     else {
         *state.my_url.write().unwrap() = current_url;
